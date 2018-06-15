@@ -1,0 +1,6 @@
+[submodule "module"]
+	path = module
+	url = git@github.com:thiagoelg/mc837-address-api-server.git
+[submodule "site"]
+	path = site
+	url = git@github.com:thiagoelg/mc851-ecommerce.git

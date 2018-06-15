@@ -1,0 +1,141 @@
+version: '3.5'
+
+services:
+
+  front:
+    container_name: front
+    build:
+      context: .
+      dockerfile: site/Dockerfile
+    volumes:
+      - './site/front:/usr/src/app'
+      - '/usr/src/app/node_modules'
+    labels:
+      - 'traefik.backend=front'
+      - 'traefik.port=3000'
+      - 'traefik.frontend.rule=Host:front.thiagoelg.com'
+    ports:
+      - 3000
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_BACK_URL=back.thiagoelg.com
+      - REACT_APP_FRONT_URL=front.thiagoelg.com
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      mc851-deploy:
+        aliases:
+          - front.thiagoelg.com
+
+  back:
+    container_name: back
+    image: node:9
+    user: node
+    working_dir: /home/node
+    environment:
+      - NODE_ENV=development
+      - BACK_URL=back.thiagoelg.com
+      - FRONT_URL=front.thiagoelg.com
+    volumes:
+      - ./site/back:/home/node/
+    command: /home/node/run.sh
+    labels:
+      - 'traefik.backend=back'
+      - 'traefik.port=3001'
+      - 'traefik.frontend.rule=Host:back.thiagoelg.com'
+    ports:
+      - 3001
+    depends_on:
+      - "db"
+    networks:
+      mc851-deploy:
+        aliases:
+          - back.thiagoelg.com
+
+  db:
+    container_name: db
+    image: mariadb
+    volumes:
+      - .:/database/init_db.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: P4ssword!
+    networks:
+      mc851-deploy:
+        aliases:
+          - db.localhost
+
+  flyway-repair:
+    image: boxfuse/flyway
+    command: repair
+    volumes:
+      - .:/flyway/sql
+    depends_on:
+      - db
+    networks:
+      mc851-deploy:
+
+  flyway:
+    image: boxfuse/flyway
+    command: -url=jdbc:mysql://db.localhost:3306 -schemas=ecommerce -user=root -password=P4ssword! migrate
+    volumes:
+      - .:/flyway/sql
+    depends_on:
+      - db
+      - flyway-repair
+    networks:
+      mc851-deploy:
+
+  pma:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: mariadb
+      PMA_ARBITRARY: 1
+      PHP_UPLOAD_MAX_FILESIZE: 1G
+      PHP_MAX_INPUT_VARS: 1G
+    labels:
+      - 'traefik.backend=pma'
+      - 'traefik.port=80'
+      - 'traefik.frontend.rule=Host:pma.thiagoelg.com'
+    networks:
+      mc851-deploy:
+
+  nodejs:
+    container_name: nodejs
+    image: node:9
+    user: node
+    working_dir: /home/node
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./module:/home/node/
+    command: ./run.sh
+    labels:
+      - 'traefik.backend=node'
+      - 'traefik.port=7777'
+      - 'traefik.frontend.rule=Host:node.thiagoelg.com'
+    ports:
+      - 7777
+    depends_on:
+      - db
+    networks:
+      mc851-deploy:
+        aliases:
+          - node.thiagoelg.com
+
+  traefik:
+    image: traefik
+    command: -c /dev/null --web --docker --logLevel=INFO
+    ports:
+      - '80:80'
+      - '8080:8080' # Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      mc851-deploy:
+
+networks:
+  mc851-deploy:
+    external:
+      name: mc851-deploy
+
