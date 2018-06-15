@@ -3,7 +3,7 @@ version: '3.5'
 services:
 
   front-prod:
-    container_name: front
+    container_name: front-prod
     build:
       context: .
       dockerfile: site/Dockerfile
@@ -27,9 +27,9 @@ services:
           - front.thiagoelg.com
 
   back-prod:
-    container_name: back
+    container_name: back-prod
     image: node:9
-    user: node
+    user: root
     working_dir: /home/node
     environment:
       - NODE_ENV=development
@@ -52,7 +52,7 @@ services:
           - back.thiagoelg.com
 
   db-prod:
-    container_name: db
+    container_name: db-prod
     image: mariadb
     volumes:
       - .:/database/init_db.sql
@@ -101,7 +101,7 @@ services:
       mc851-deploy:
 
   nodejs-prod:
-    container_name: nodejs
+    container_name: nodejs-prod
     image: node:9
     user: node
     working_dir: /home/node
