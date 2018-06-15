@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
 
-  front:
+  front-prod:
     container_name: front
     build:
       context: .
@@ -26,7 +26,7 @@ services:
         aliases:
           - front.thiagoelg.com
 
-  back:
+  back-prod:
     container_name: back
     image: node:9
     user: node
@@ -45,13 +45,13 @@ services:
     ports:
       - 3001
     depends_on:
-      - "db"
+      - db-prod
     networks:
       mc851-deploy:
         aliases:
           - back.thiagoelg.com
 
-  db:
+  db-prod:
     container_name: db
     image: mariadb
     volumes:
@@ -63,31 +63,31 @@ services:
         aliases:
           - db.localhost
 
-  flyway-repair:
+  flyway-repair-prod:
     image: boxfuse/flyway
     command: repair
     volumes:
       - .:/flyway/sql
     depends_on:
-      - db
+      - db-prod
     networks:
       mc851-deploy:
 
-  flyway:
+  flyway-prod:
     image: boxfuse/flyway
     command: -url=jdbc:mysql://db.localhost:3306 -schemas=ecommerce -user=root -password=P4ssword! migrate
     volumes:
       - .:/flyway/sql
     depends_on:
-      - db
-      - flyway-repair
+      - db-prod
+      - flyway-repair-prod
     networks:
       mc851-deploy:
 
-  pma:
+  pma-prod:
     image: phpmyadmin/phpmyadmin
     depends_on:
-      - db
+      - db-prod
     environment:
       PMA_HOST: mariadb
       PMA_ARBITRARY: 1
@@ -100,7 +100,7 @@ services:
     networks:
       mc851-deploy:
 
-  nodejs:
+  nodejs-prod:
     container_name: nodejs
     image: node:9
     user: node
@@ -117,13 +117,13 @@ services:
     ports:
       - 7777
     depends_on:
-      - db
+      - db-prod
     networks:
       mc851-deploy:
         aliases:
           - node.thiagoelg.com
 
-  traefik:
+  traefik-prod:
     image: traefik
     command: -c /dev/null --web --docker --logLevel=INFO
     ports:
